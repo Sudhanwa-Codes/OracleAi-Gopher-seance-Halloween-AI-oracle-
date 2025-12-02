@@ -266,13 +266,13 @@ h1 {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  /* Removed gap: 10px; to allow button to be inside */
 }
 
 textarea {
   flex: 1;
   height: 70px;
-  padding: 10px;
+  padding: 10px 60px 10px 10px; /* Added padding-right for mic button */
   background-color: #000;
   border: 1px solid #005517;
   color: #00ff41;
@@ -284,12 +284,15 @@ textarea {
 
 /* --- MICROPHONE BUTTON STYLING --- */
 .mic-button {
-  width: 50px;
-  height: 50px;
+  position: absolute; /* Position button inside container */
+  right: 5px;
+  top: 5px;
+  width: 40px; /* Slightly smaller button */
+  height: 40px; /* Slightly smaller button */
   padding: 0;
   margin: 0;
-  background-color: #005517;
-  border: 2px solid #00ff41;
+  background-color: transparent; /* Make background transparent */
+  border: none; /* Remove border */
   color: #00ff41;
   font-size: 1.5em;
   cursor: pointer;
@@ -297,39 +300,46 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+  /* Apply neon glow */
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.9), 
+               0 0 15px rgba(0, 255, 65, 0.6);
 }
 
 .mic-button:hover:not(.disabled) {
-  background-color: #00ff41;
+  /* Remove background/transform for hover on button, focus on glow */
+  background-color: transparent;
   transform: scale(1.1);
-  box-shadow: 0 0 20px rgba(0, 255, 65, 0.8);
+  text-shadow: 0 0 12px rgba(0, 255, 65, 1), 
+               0 0 20px rgba(0, 255, 65, 0.8);
+  box-shadow: none; /* Remove box-shadow */
 }
 
 .mic-button.recording {
-  background-color: #ff0041;
-  border-color: #ff0041;
+  color: #ff0041;
+  text-shadow: 0 0 8px rgba(255, 0, 65, 0.9), 
+               0 0 15px rgba(255, 0, 65, 0.6);
   animation: pulse-red 1s infinite;
 }
 
 @keyframes pulse-red {
   0%, 100% {
-    box-shadow: 0 0 10px rgba(255, 0, 65, 0.8);
+    text-shadow: 0 0 8px rgba(255, 0, 65, 0.9), 
+                 0 0 15px rgba(255, 0, 65, 0.6);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 25px rgba(255, 0, 65, 1);
+    text-shadow: 0 0 15px rgba(255, 0, 65, 1), 
+                 0 0 25px rgba(255, 0, 65, 0.8);
     transform: scale(1.15);
   }
 }
 
 .mic-button.disabled {
-  background-color: #222;
-  border-color: #444;
   color: #444;
   cursor: not-allowed;
   box-shadow: none;
   opacity: 0.4;
+  text-shadow: none;
 }
 
 .mic-button.shaking {

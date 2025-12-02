@@ -8,8 +8,94 @@ const LearnPage = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isRecordingLearn, setIsRecordingLearn] = useState(false);
+  const [recognitionLearn, setRecognitionLearn] = useState(null);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
+  const inputRef = useRef(null); // Reference for the input field
+
+  // --- SPEECH RECOGNITION SETUP ---
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognitionInstance = new SpeechRecognition();
+      recognitionInstance.lang = 'en-US';
+      recognitionInstance.continuous = false;
+      recognitionInstance.interimResults = true;
+      
+      recognitionInstance.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        if (finalTranscript) {
+          setQuery(finalTranscript);
+        } else if (interimTranscript) {
+          setQuery(interimTranscript);
+        }
+      };
+      
+      recognitionInstance.onend = () => {
+        setIsRecordingLearn(false);
+        // Return focus to input field after mic stops
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, 100);
+      };
+      
+      recognitionInstance.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsRecordingLearn(false);
+        // Return focus to input field on error too
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, 100);
+      };
+      
+      setRecognitionLearn(recognitionInstance);
+    }
+  }, []);
+  
+  const toggleMicrophoneLearn = () => {
+    if (!recognitionLearn || loading) {
+      if (!recognitionLearn) console.warn('Speech recognition not supported in this browser.');
+      return;
+    }
+    
+    if (isRecordingLearn) {
+      recognitionLearn.stop();
+      setIsRecordingLearn(false);
+      
+      // Return focus to input after manual stop
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+    } else {
+      setIsRecordingLearn(true);
+      recognitionLearn.start();
+      
+      // Auto-stop after 3 seconds of silence
+      setTimeout(() => {
+        if (isRecordingLearn) {
+          recognitionLearn.stop();
+        }
+      }, 3000);
+    }
+  };
 
   // Welcome message on mount
   useEffect(() => {
@@ -29,7 +115,12 @@ const LearnPage = () => {
   e.preventDefault();
   if (!query.trim()) return;
   
-  const userMessage = { role: 'user', content: query };
+  // Stop recording if active before submitting
+  if (isRecordingLearn) {
+    recognitionLearn.stop();
+  }
+  
+  const userMessage = { role: 'user', content: query, timestamp: new Date().toISOString() };
   setMessages(prev => [...prev, userMessage]);
   setQuery('');
   setLoading(true);
@@ -49,7 +140,8 @@ const LearnPage = () => {
     
     const assistantMessage = { 
       role: 'assistant', 
-      content: data.response || 'No response from archive.' 
+      content: data.response || 'No response from archive.',
+      timestamp: new Date().toISOString()
     };
     setMessages(prev => [...prev, assistantMessage]);
     
@@ -251,16 +343,29 @@ const LearnPage = () => {
           {/* Input form */}
           <div className="learn-input-area">
             <form className="learn-input-form" onSubmit={handleSubmit}>
-              <input
-                type="text"
-                className="learn-input"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask about technology, protocols, internet history..."
-                disabled={loading}
-                autoFocus
-              />
+              <div className="input-with-mic"> {/* New container for input and mic */}
+                <input
+                  type="text"
+                  className="learn-input"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask about technology, protocols, internet history..."
+                  disabled={loading}
+                  autoFocus
+                  ref={inputRef}
+                />
+                <button 
+                  type="button" 
+                  className={`learn-mic-btn ${isRecordingLearn ? 'recording' : ''}`}
+                  onClick={toggleMicrophoneLearn}
+                  disabled={loading || !recognitionLearn}
+                  title={isRecordingLearn ? 'Stop recording' : 'Start voice input'}
+                >
+                  {isRecordingLearn ? '🔴' : '🎙️'}
+                </button>
+              </div>
+              
               <button 
                 type="submit" 
                 className="learn-submit-btn"
@@ -269,6 +374,11 @@ const LearnPage = () => {
                 {loading ? '⏳' : '📤'} ASK
               </button>
             </form>
+            {isRecordingLearn && (
+              <p className="learn-recording-indicator">
+                The archive heareth thee...
+              </p>
+            )}
           </div>
         </div>
       </div>

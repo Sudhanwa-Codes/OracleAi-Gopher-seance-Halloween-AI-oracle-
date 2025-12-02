@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import html2canvas from 'html2canvas';
@@ -91,6 +91,8 @@ const controlMusicResume = () => {
   if (music) {
     if (music.paused) {
       music.play().catch(e => console.warn("Music resumption failed (browser policy re-applied).", e));
+    } else if (music.volume !== BASE_VOLUME) {
+      music.volume = BASE_VOLUME; // Ensure volume returns to normal after TTS/laugh
     }
   }
 };
@@ -187,7 +189,7 @@ const playSpookyLaugh = (callback) => {
   audio.play().catch(e => console.error("Could not play audio:", e));
 };
 
-function App() {
+function SeancePage() { // Renamed from App to SeancePage to match file name and standard convention
   const [query, setQuery] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -315,8 +317,8 @@ function App() {
   }, [showShareButtons]);
 
   const toggleMicrophone = () => {
-    if (!recognition) {
-      console.warn('Speech recognition not supported in this browser.');
+    if (!recognition || micDisabled) {
+      if (!micDisabled) console.warn('Speech recognition not supported in this browser.');
       return;
     }
     
@@ -333,6 +335,7 @@ function App() {
         }
       }, 100);
     } else {
+      // Pause background music when starting mic
       const music = getBackgroundMusic();
       if (music) {
         music.pause();
@@ -343,7 +346,8 @@ function App() {
       
       // Auto-stop after 3 seconds of silence
       setTimeout(() => {
-        if (isRecording) {
+        // Only stop if still recording (i.e., user hasn't manually stopped or final result hasn't come)
+        if (isRecording) { 
           recognition.stop();
         }
       }, 3000);
@@ -775,10 +779,10 @@ function App() {
                   e.stopPropagation();
                 }
               }}
-              disabled={micDisabled}
+              disabled={micDisabled || !recognition}
               title={micDisabled ? 'Mic disabled during prophecy' : isRecording ? 'Stop recording' : 'Start voice input'}
             >
-              {isRecording ? '🔴' : '🎤'}
+              {isRecording ? '🔴' : '🎙️'}
             </button>
           </div>
           {isRecording && (
@@ -856,4 +860,4 @@ function App() {
   );
 }
 
-export default App;
+export default SeancePage;
