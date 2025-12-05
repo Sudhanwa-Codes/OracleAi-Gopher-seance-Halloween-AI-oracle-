@@ -1,7 +1,7 @@
 {
   "enabled": true,
   "name": "Python Code Quality Check",
-  "description": "Runs flake8 linting on backend Python files after git commits",
+  "description": "Runs flake8 linting on backend Python files after git commits manually\n",
   "version": "1",
   "when": {
     "type": "userTriggered"
@@ -9,5 +9,7 @@
   "then": {
     "type": "askAgent",
     "prompt": "python .kiro/hooks/post_commit.py\n"
-  }
+  },
+  "workspaceFolderName": "gopher-seance",
+  "shortName": "python-quality-check"
 }
